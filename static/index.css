@@ -9,9 +9,11 @@
 :root {
   --text-dark: hsl(30, 100%, 3%);
   --text-light: hsl(30, 100%, 90%);
+  --text-error: hsl(0, 89%, 36%);
   --bg-primary: hsl(27, 100%, 50%);
   --bg-light: hsl(32, 100%, 60%);
   --bg-dark: hsl(32, 100%, 40%);
+  --bg-error: hsl(0, 69%, 48%);
   font-size: 10px;
 }
 

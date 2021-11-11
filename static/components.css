@@ -79,6 +79,15 @@
   border: 1px solid black;
 }
 
+.error-input {
+  border: 3px solid var(--bg-error);
+}
+
+.error-text {
+  color: var(--text-error);
+  margin-left: 4px;
+}
+
 .form-input:focus {
   border: 1px solid var(--bg-primary);
 }
