@@ -10,6 +10,11 @@ pub struct NewUserRequest {
 	pub confirm_password: String
 }
 
+#[derive(FromForm)]
+pub struct ReturningUserRequest {
+	pub email: String,
+	pub password: String,
+}
 
 #[get("/")]
 pub fn index() -> Template {
@@ -51,5 +56,34 @@ pub fn sign_up(new_user: Form<NewUserRequest>) -> Template {
             "password": new_user.password.clone()
         });
         Template::render("signup", &context)
+    }
+}
+
+#[get("/login")]
+pub fn login_page() -> Template {
+    let context = json!({});
+    Template::render("login", &context)
+}
+
+#[post("/login", data = "<user>")]
+pub fn login(user: Form<ReturningUserRequest>) -> Template {
+    if user.email.len() > 0 {
+        if user.password.len() > 0 {
+            //TODO add actual validation for password
+            let context = json!({"isSignedIn": true, "email": user.email.clone()});
+            Template::render("profile", &context)
+        } else {
+            let context = json!({
+                "email": user.email.clone(),
+                "passwordError": "password is required",
+            });
+            Template::render("login", &context)
+        }
+    } else {
+        let context = json!({
+            "emailError": "email is required",
+            "password": user.password.clone()
+        });
+        Template::render("login", &context)
     }
 }
