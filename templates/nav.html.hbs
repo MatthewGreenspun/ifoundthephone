@@ -1,0 +1,17 @@
+<section class="nav">
+  <h1>IFoundThePhone</h1>
+  <section class="btns">
+    {{#if is_signed_in}}
+      <button class="btn">
+        My Profile
+      </button>
+    {{else}}
+      <a class="btn" href="/signup">
+        Sign Up
+      </a>
+      <a class="btn" href="/login">
+        Login
+      </a>
+    {{/if}}
+  </section>
+</section>

@@ -4,9 +4,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/static/index.css" />
+    <link rel="stylesheet" href="/static/components.css" />
     <title>IFoundThePhone</title>
   </head>
   <body>
-    <h1>IFoundThePhone</h1>
+    {{>nav is_signed_in=is_signed_in }}
+      <form id="code-input-form" class="main">
+      <h1 class="input-label">Enter a device code: </h1>
+      <input type="text" class="code-input" id="code"/>
+      </form> 
+    <script src="/static/index.js"></script>
   </body>
 </html>

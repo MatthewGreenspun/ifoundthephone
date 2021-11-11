@@ -5,3 +5,27 @@
   box-sizing: border-box;
   font-family: "Roboto", sans-serif;
 }
+
+:root {
+  --text-dark: hsl(30, 100%, 3%);
+  --text-light: hsl(30, 100%, 90%);
+  --bg-primary: hsl(27, 100%, 50%);
+  --bg-light: hsl(32, 100%, 60%);
+  --bg-dark: hsl(32, 100%, 40%);
+  font-size: 10px;
+}
+
+@media screen and (min-width: 768px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  :root {
+    font-size: 20px;
+  }
+  .code-input {
+    max-width: 800px !important;
+  }
+}
