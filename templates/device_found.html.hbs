@@ -1,0 +1,30 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="/static/components.css" />
+		<link rel="stylesheet" href="/static/index.css" />
+    <title>IFoundThePhone - Sign Up</title>
+  </head>
+  <body>
+		<section class="main">
+			<h1 class="text-lg text-center">Thank you for finding device {{deviceId}}</h1>
+			<h2 class="text-md text-center">Please provide some information to help the owner reclaim this device. </h2>
+			<form class="text-form main" method="POST">
+				<h3>Message&#40;required&#41;:</h3>
+				{{#if messageError}}
+					<textarea class="form-input error-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
+					<p class="error-text">{{emailError}}</p>
+				{{else}}
+					<textarea class="form-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
+				{{/if}}
+				<h3>Email&#40;optional&#41;:</h3>
+				<input type="email" class="form-input" name="email" value="{{email}}"/>
+				<h3>Phone number&#40;optional&#41;:</h3>
+				<input type="tel" class="form-input" name="phone-number" value={{phoneNumber}}></input>
+				<button type="submit" class="submit-btn btn">Send</button>
+			</form>
+		</section>
+  </body>
+</html>
