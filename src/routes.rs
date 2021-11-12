@@ -1,20 +1,10 @@
 use serde_json::json;
-use rocket::form::{FromForm, Form};
+use rocket::form::Form;
 use rocket_dyn_templates::Template;
-
-#[derive(FromForm)]
-pub struct NewUserRequest {
-	pub email: String,
-	pub password: String,
-	#[field(name = "confirm-password")]	
-	pub confirm_password: String
-}
-
-#[derive(FromForm)]
-pub struct ReturningUserRequest {
-	pub email: String,
-	pub password: String,
-}
+mod form_structs;
+use form_structs::{NewUserRequest, ReturningUserRequest};
+mod auth;
+mod db;
 
 #[get("/")]
 pub fn index() -> Template {
@@ -29,34 +19,33 @@ pub fn sign_up_page() -> Template {
 }
 
 #[post("/signup", data = "<new_user>")]
-pub fn sign_up(new_user: Form<NewUserRequest>) -> Template {
+pub async fn sign_up(new_user: Form<NewUserRequest>) -> Template {
     if new_user.email.len() > 0 {
         if new_user.password.len() > 0 {
             if new_user.password == new_user.confirm_password {
-                let context = json!({"isSignedIn": true, "email": new_user.email.clone()});
-                Template::render("profile", &context)
-            } else {
-                let context = json!({
-                    "email": new_user.email.clone(),
-                    "password": new_user.password.clone(),
-                    "confirmPasswordError": "passwords don't match"
-                });
-                Template::render("signup", &context)
-            }
-        } else {
+                let context = json!({"isSignedIn": true, "email": &new_user.email});
+                let _ = db::save_user(&new_user.email, &new_user.password).await;
+                return Template::render("profile", &context)
+            } 
             let context = json!({
-                "email": new_user.email.clone(),
-                "passwordError": "password is required",
+                "email": &new_user.email,
+                "password": &new_user.password,
+                "confirmPasswordError": "passwords don't match"
             });
-            Template::render("signup", &context)
-        }
-    } else {
+            return Template::render("signup", &context)
+        } 
         let context = json!({
-            "emailError": "email is required",
-            "password": new_user.password.clone()
+            "email": &new_user.email,
+            "passwordError": "password is required",
         });
-        Template::render("signup", &context)
-    }
+        return Template::render("signup", &context)
+    } 
+    let context = json!({
+        "emailError": "email is required",
+        "password": &new_user.password
+    });
+    Template::render("signup", &context)
+    
 }
 
 #[get("/login")]
@@ -70,20 +59,24 @@ pub fn login(user: Form<ReturningUserRequest>) -> Template {
     if user.email.len() > 0 {
         if user.password.len() > 0 {
             //TODO add actual validation for password
-            let context = json!({"isSignedIn": true, "email": user.email.clone()});
-            Template::render("profile", &context)
-        } else {
-            let context = json!({
-                "email": user.email.clone(),
-                "passwordError": "password is required",
-            });
-            Template::render("login", &context)
+            let context = json!({"isSignedIn": true, "email": &user.email});
+            return Template::render("profile", &context)
         }
-    } else {
         let context = json!({
-            "emailError": "email is required",
-            "password": user.password.clone()
+            "email": &user.email,
+            "passwordError": "password is required",
         });
-        Template::render("login", &context)
+        return Template::render("login", &context)
     }
+    let context = json!({
+        "emailError": "email is required",
+        "password": &user.password
+    });
+    Template::render("login", &context)
+}
+
+#[get("/device/<id>")]
+pub fn device_found_page(id: String) -> Template {
+    let context = json!({"deviceId": &id});
+    Template::render("device_found", &context)
 }
