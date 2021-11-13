@@ -13,6 +13,7 @@ tokio-postgres = "0.7.5"
 dotenv = "0.15.0"
 ring = "0.16.20"
 hex = "0.4.0"
+lettre = "0.10.0-rc.4"
 
 [dependencies.rocket_dyn_templates]
 features = ["handlebars"]

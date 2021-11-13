@@ -2,6 +2,7 @@ use serde_json::json;
 use rocket::form::Form;
 use rocket_dyn_templates::Template;
 mod form_structs;
+mod email;
 use form_structs::{NewUserRequest, ReturningUserRequest};
 mod auth;
 mod db;
@@ -25,6 +26,7 @@ pub async fn sign_up(new_user: Form<NewUserRequest>) -> Template {
             if new_user.password == new_user.confirm_password {
                 let context = json!({"isSignedIn": true, "email": &new_user.email});
                 let _ = db::save_user(&new_user.email, &new_user.password).await;
+                email::email_new_user(&new_user.email);
                 return Template::render("profile", &context)
             } 
             let context = json!({
