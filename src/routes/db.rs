@@ -16,8 +16,6 @@ pub async fn save_user(email: &String, password: &String) -> Result<(), Error> {
 	let (client, connection) =
 			tokio_postgres::connect(&postgres_uri, NoTls).await?;
 
-	// The connection object performs the actual communication with the database,
-	// so spawn it off to run on its own.
 	rocket::tokio::spawn(async move {
 			if let Err(e) = connection.await {
 					eprintln!("connection error: {}", e);
@@ -32,4 +30,20 @@ pub async fn save_user(email: &String, password: &String) -> Result<(), Error> {
 
 	client.execute("INSERT INTO users (user_id, email, pw_hash, pw_salt) VALUES ($1, $2, $3, $4)",&[&id, email, hash_str, salt_str]).await?;
 	Ok(())
+}
+
+pub async fn get_email(id: &String) -> Result<String, Error> {
+	let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+	let (client, connection) =
+			tokio_postgres::connect(&postgres_uri, NoTls).await?;
+
+	rocket::tokio::spawn(async move {
+			if let Err(e) = connection.await {
+					eprintln!("connection error: {}", e);
+			}
+	});
+
+	let rows = client.query("SELECT email FROM users WHERE user_id = $1", &[id]).await?;
+	let email: &str = rows[0].get("email");
+	Ok(email.to_string())
 }
