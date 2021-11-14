@@ -1,8 +1,8 @@
-use serde_json::json;
-use rocket::{form::Form};
+use rocket::form::Form;
 use rocket_dyn_templates::Template;
-mod form_structs;
+use serde_json::json;
 mod email;
+mod form_structs;
 use form_structs::*;
 mod auth;
 mod db;
@@ -27,27 +27,26 @@ pub async fn sign_up(new_user: Form<NewUserRequest>) -> Template {
                 let context = json!({"isSignedIn": true, "email": &new_user.email});
                 let _ = db::save_user(&new_user.email, &new_user.password).await;
                 email::email_new_user(&new_user.email);
-                return Template::render("profile", &context)
-            } 
+                return Template::render("profile", &context);
+            }
             let context = json!({
                 "email": &new_user.email,
                 "password": &new_user.password,
                 "confirmPasswordError": "passwords don't match"
             });
-            return Template::render("signup", &context)
-        } 
+            return Template::render("signup", &context);
+        }
         let context = json!({
             "email": &new_user.email,
             "passwordError": "password is required",
         });
-        return Template::render("signup", &context)
-    } 
+        return Template::render("signup", &context);
+    }
     let context = json!({
         "emailError": "email is required",
         "password": &new_user.password
     });
     Template::render("signup", &context)
-    
 }
 
 #[get("/login")]
@@ -62,13 +61,13 @@ pub fn login(user: Form<ReturningUserRequest>) -> Template {
         if user.password.len() > 0 {
             //TODO add actual validation for password
             let context = json!({"isSignedIn": true, "email": &user.email});
-            return Template::render("profile", &context)
+            return Template::render("profile", &context);
         }
         let context = json!({
             "email": &user.email,
             "passwordError": "password is required",
         });
-        return Template::render("login", &context)
+        return Template::render("login", &context);
     }
     let context = json!({
         "emailError": "email is required",
@@ -79,7 +78,7 @@ pub fn login(user: Form<ReturningUserRequest>) -> Template {
 
 #[get("/device/<id>")]
 pub fn device_found_page(id: String) -> Template {
-    let context = json!({"deviceId": &id});
+    let context = json!({ "deviceId": &id });
     Template::render("device_found", &context)
 }
 
@@ -95,12 +94,12 @@ pub async fn device_found(id: String, email_info: Form<DeviceFoundRequest>) -> T
         };
         if owner_email.len() == 0 {
             let context = json!({"deviceId": &id, "error": "failed to send email"});
-            return Template::render("device_found", &context)
+            return Template::render("device_found", &context);
         }
         email::email_device_owner(&owner_email, email_info.into_inner());
         let context = json!({});
-        return Template::render("index", &context)
+        return Template::render("index", &context);
     }
     let context = json!({"deviceId": &id, "messageError": "message is required"});
-    return Template::render("device_found", &context)
+    return Template::render("device_found", &context);
 }

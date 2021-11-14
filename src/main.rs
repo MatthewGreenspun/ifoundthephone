@@ -1,15 +1,25 @@
 #[macro_use]
 extern crate rocket;
+use rocket::fs::{relative, FileServer};
 use rocket_dyn_templates::Template;
-use rocket::fs::{FileServer, relative};
 mod routes;
-use routes::*;
 
 #[launch]
 fn rocket() -> _ {
     dotenv::dotenv().expect("failed to load environment variables");
     rocket::build()
         .mount("/static", FileServer::from(relative!("/static")))
-        .mount("/", routes![index, sign_up, sign_up_page, login, login_page, device_found_page, device_found])
+        .mount(
+            "/",
+            routes![
+                routes::index,
+                routes::sign_up,
+                routes::sign_up_page,
+                routes::login,
+                routes::login_page,
+                routes::device_found_page,
+                routes::device_found
+            ],
+        )
         .attach(Template::fairing())
 }
