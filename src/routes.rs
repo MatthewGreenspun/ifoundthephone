@@ -1,9 +1,9 @@
 use serde_json::json;
-use rocket::form::Form;
+use rocket::{form::Form};
 use rocket_dyn_templates::Template;
 mod form_structs;
 mod email;
-use form_structs::{NewUserRequest, ReturningUserRequest};
+use form_structs::*;
 mod auth;
 mod db;
 
@@ -81,4 +81,26 @@ pub fn login(user: Form<ReturningUserRequest>) -> Template {
 pub fn device_found_page(id: String) -> Template {
     let context = json!({"deviceId": &id});
     Template::render("device_found", &context)
+}
+
+#[post("/device/<id>", data = "<email_info>")]
+pub async fn device_found(id: String, email_info: Form<DeviceFoundRequest>) -> Template {
+    if email_info.message.len() > 0 {
+        let owner_email = match db::get_email(&id).await {
+            Ok(email) => email,
+            Err(e) => {
+                eprintln!("failed to retrieve email. Error: {:?}", e);
+                String::new()
+            }
+        };
+        if owner_email.len() == 0 {
+            let context = json!({"deviceId": &id, "error": "failed to send email"});
+            return Template::render("device_found", &context)
+        }
+        email::email_device_owner(&owner_email, email_info.into_inner());
+        let context = json!({});
+        return Template::render("index", &context)
+    }
+    let context = json!({"deviceId": &id, "messageError": "message is required"});
+    return Template::render("device_found", &context)
 }

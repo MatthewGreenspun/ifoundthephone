@@ -10,6 +10,6 @@ fn rocket() -> _ {
     dotenv::dotenv().expect("failed to load environment variables");
     rocket::build()
         .mount("/static", FileServer::from(relative!("/static")))
-        .mount("/", routes![index, sign_up, sign_up_page, login, login_page, device_found_page])
+        .mount("/", routes![index, sign_up, sign_up_page, login, login_page, device_found_page, device_found])
         .attach(Template::fairing())
 }

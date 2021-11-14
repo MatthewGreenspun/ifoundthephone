@@ -15,7 +15,7 @@
 				<h3>Message&#40;required&#41;:</h3>
 				{{#if messageError}}
 					<textarea class="form-input error-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
-					<p class="error-text">{{emailError}}</p>
+					<p class="error-text">{{messageError}}</p>
 				{{else}}
 					<textarea class="form-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
 				{{/if}}
