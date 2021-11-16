@@ -13,15 +13,16 @@
   padding: 0.5rem 1rem;
   background-color: var(--bg-light);
   outline: none;
-  border: 1px solid var(--bg-dark);
-  border-radius: 4px;
+  border: none;
+  border-radius: 6px;
   transition: 0.1s;
-  margin: 2px;
+  margin: 0.5rem 2px 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .btn:hover {
-  background-color: var(--bg-primary);
-  color: var(--text-light);
+  background-color: var(--bg-light-hover);
 }
 
 .code-input {
@@ -32,8 +33,9 @@
   max-width: 500px;
   margin: 4px;
   outline: none;
-  border-radius: 2px;
-  border: 1px solid black;
+  outline: none;
+  border-radius: 6px;
+  border: 1px solid var(--bg-gray);
 }
 
 .code-input:focus {
@@ -57,7 +59,7 @@
 
 .text-form {
   align-items: flex-start;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 1rem;
   border: 2px solid var(--bg-primary);
   max-width: 500px;
@@ -71,25 +73,27 @@
 
 .form-input {
   width: calc(100% - 4px);
+  font-size: 0.75rem;
   padding: 0.5rem;
   max-width: 500;
   margin: 4px;
   outline: none;
-  border-radius: 2px;
-  border: 1px solid black;
+  border-radius: 6px;
+  border: 1px solid var(--bg-gray);
 }
 
 .error-input {
-  border: 3px solid var(--bg-error);
+  border: 1px solid var(--bg-error);
 }
 
 .error-text {
   color: var(--text-error);
-  margin-left: 4px;
+  margin: 0.2rem 4px 0.5rem;
+  font-size: 0.8rem;
 }
 
 .form-input:focus {
-  border: 1px solid var(--bg-primary);
+  border: 2px solid var(--bg-primary);
 }
 
 .submit-btn {
@@ -111,4 +115,9 @@
 textarea.form-input {
   resize: none;
   white-space: pre-wrap;
+}
+
+.text-form h3 {
+  font-size: 0.8rem;
+  font-weight: 400;
 }

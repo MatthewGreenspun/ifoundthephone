@@ -10,28 +10,28 @@
   <body>
 		<section class="form-page">
 			<form class="text-form main" method="POST">
-				<h3>Email:</h3>
+				<h3>Email</h3>
 				{{#if emailError}}
-					<input type="email" class="form-input error-input" name="email" />
+					<input type="email" class="form-input error-input" name="email" placeholder="example@example.com" />
 					<p class="error-text">{{emailError}}</p>
 				{{else}}
-					<input type="email" class="form-input" name="email" value="{{email}}"/>
+					<input type="email" class="form-input" name="email" value="{{email}}" placeholder="example@example.com" />
 				{{/if}}
-				<h3>Password:</h3>
+				<h3>Password</h3>
 				{{#if passwordError}}
 					<input class="form-input error-input" type="password" name="password"></input>
 					<p class="error-text">{{passwordError}}</p>
 				{{else}}
 					<input class="form-input" type="password" name="password" value={{password}}></input>
 				{{/if}}
-				<h3>Confirm Password:</h3>
+				<h3>Confirm Password</h3>
 				{{#if confirmPasswordError}}
 					<input class="form-input error-input" type="password" name="confirm-password"></input>
 					<p class="error-text">{{confirmPasswordError}}</p>
 				{{else}}
 					<input class="form-input" type="password" name="confirm-password" value="{{confirmPassword}}"></input>
 				{{/if}}
-				<button type="submit" class="submit-btn btn">Sign Up</button>
+				<button type="submit" class="submit-btn btn">Sign up for IFoundThePhone</button>
 			</form>
 		</section>
   </body>

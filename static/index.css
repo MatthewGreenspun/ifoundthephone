@@ -11,7 +11,10 @@
   --text-light: hsl(30, 100%, 90%);
   --text-error: hsl(0, 89%, 36%);
   --bg-primary: hsl(27, 100%, 50%);
+  --bg-primary-hover: hsl(27, 100%, 45%);
   --bg-light: hsl(32, 100%, 60%);
+  --bg-light-hover: hsl(32, 100%, 53%);
+  --bg-gray: hsl(19, 8%, 60%);
   --bg-dark: hsl(32, 100%, 40%);
   --bg-error: hsl(0, 69%, 48%);
   font-size: 10px;
