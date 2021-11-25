@@ -3,7 +3,7 @@ use hex::ToHex;
 use rand::{distributions::Alphanumeric, Rng};
 use tokio_postgres::{Error, NoTls};
 
-fn gen_user_id() -> String {
+pub fn gen_user_id() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(7)
@@ -11,7 +11,7 @@ fn gen_user_id() -> String {
         .collect()
 }
 
-pub async fn save_user(email: &String, password: &String) -> Result<(), Error> {
+pub async fn save_user(user_id: &String, email: &String, password: &String) -> Result<(), Error> {
     let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
     let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
 
@@ -21,7 +21,6 @@ pub async fn save_user(email: &String, password: &String) -> Result<(), Error> {
         }
     });
 
-    let id: String = gen_user_id();
     let salt = auth::gen_salt();
     let hash = auth::gen_hash(&salt, password);
     let salt_str = &salt.encode_hex::<String>();
@@ -30,7 +29,7 @@ pub async fn save_user(email: &String, password: &String) -> Result<(), Error> {
     client
         .execute(
             "INSERT INTO users (user_id, email, pw_hash, pw_salt) VALUES ($1, $2, $3, $4)",
-            &[&id, email, hash_str, salt_str],
+            &[&user_id, email, hash_str, salt_str],
         )
         .await?;
     Ok(())

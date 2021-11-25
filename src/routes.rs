@@ -25,8 +25,9 @@ pub async fn sign_up(new_user: Form<NewUserRequest>) -> Template {
         if new_user.password.len() > 0 {
             if new_user.password == new_user.confirm_password {
                 let context = json!({"isSignedIn": true, "email": &new_user.email});
-                let _ = db::save_user(&new_user.email, &new_user.password).await;
-                email::email_new_user(&new_user.email);
+                let user_id = db::gen_user_id();
+                let _ = db::save_user(&user_id, &new_user.email, &new_user.password).await;
+                email::email_new_user(&user_id, &new_user.email);
                 return Template::render("profile", &context);
             }
             let context = json!({
