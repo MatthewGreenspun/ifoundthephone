@@ -2,8 +2,8 @@
   <h1>IFoundThePhone</h1>
   <section class="btns">
     {{#if isSignedIn}}
-      <button class="btn">
-        My Profile
+      <button class="btn" onclick="window.location.href='/logout'">
+        Logout
       </button>
     {{else}}
       <a class="btn" href="/signup">
