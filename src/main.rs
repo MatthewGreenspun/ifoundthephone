@@ -18,7 +18,8 @@ fn rocket() -> _ {
                 routes::login,
                 routes::login_page,
                 routes::device_found_page,
-                routes::device_found
+                routes::device_found,
+                routes::profile_page
             ],
         )
         .attach(Template::fairing())

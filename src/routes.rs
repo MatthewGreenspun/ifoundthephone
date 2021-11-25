@@ -1,4 +1,4 @@
-use rocket::form::Form;
+use rocket::{form::Form, response::Redirect};
 use rocket_dyn_templates::Template;
 use serde_json::json;
 mod email;
@@ -20,34 +20,33 @@ pub fn sign_up_page() -> Template {
 }
 
 #[post("/signup", data = "<new_user>")]
-pub async fn sign_up(new_user: Form<NewUserRequest>) -> Template {
+pub async fn sign_up(new_user: Form<NewUserRequest>) -> Result<Redirect, Template> {
     if new_user.email.len() > 0 {
         if new_user.password.len() > 0 {
             if new_user.password == new_user.confirm_password {
-                let context = json!({"isSignedIn": true, "email": &new_user.email});
                 let user_id = db::gen_user_id();
                 let _ = db::save_user(&user_id, &new_user.email, &new_user.password).await;
                 email::email_new_user(&user_id, &new_user.email);
-                return Template::render("profile", &context);
+                return Ok(Redirect::to(uri!(profile_page(user_id))));
             }
             let context = json!({
                 "email": &new_user.email,
                 "password": &new_user.password,
                 "confirmPasswordError": "passwords don't match"
             });
-            return Template::render("signup", &context);
+            return Err(Template::render("signup", &context));
         }
         let context = json!({
             "email": &new_user.email,
             "passwordError": "password is required",
         });
-        return Template::render("signup", &context);
+        return Err(Template::render("signup", &context));
     }
     let context = json!({
         "emailError": "email is required",
         "password": &new_user.password
     });
-    Template::render("signup", &context)
+    Err(Template::render("signup", &context))
 }
 
 #[get("/login")]
@@ -103,4 +102,18 @@ pub async fn device_found(id: String, email_info: Form<DeviceFoundRequest>) -> T
     }
     let context = json!({"deviceId": &id, "messageError": "message is required"});
     return Template::render("device_found", &context);
+}
+
+#[get("/profile/<id>")]
+pub async fn profile_page(id: String) -> Template {
+    let email = match db::get_email(&id).await {
+        Ok(email) => email,
+        Err(err) => {
+            eprintln!("error getting email from id of {}.\n error: {:?}", &id, err);
+            let context = json!({});
+            return Template::render("index", &context)
+        }
+    };
+    let context = json!({"email": email, "isSignedIn": true, "userId": &id});
+    Template::render("profile", &context)
 }
