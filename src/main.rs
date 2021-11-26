@@ -30,12 +30,15 @@ async fn rocket() -> _ {
                 routes::sign_up_page,
                 routes::login,
                 routes::login_page,
+                routes::login_page_authenticated,
                 routes::device_found_page,
                 routes::device_found,
                 routes::profile_page,
+                routes::profile_page_failure,
                 routes::logout
-            ],
+            ]
         )
+        .register("/", catchers![routes::unauthorized])
         .manage(DbClient { client })
         .attach(Template::fairing())
 }

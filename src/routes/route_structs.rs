@@ -33,8 +33,6 @@ pub struct AuthenticatedUser {
 
 #[derive(Debug)]
 pub enum AuthError {
-    CookieNotFound, 
-    InvalidSession,
     DbClientNotFound,
     DbQueryFailure
 }
@@ -46,7 +44,7 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, AuthError> {
         let session_id = match req.cookies().get("session_id") {
             Some(cookie) => cookie.value().to_string(),
-            None => return Outcome::Failure((Status::Unauthorized, AuthError::CookieNotFound))
+            None => return Outcome::Forward(())
         };
         let db_client = match req.rocket().state::<db::DbClient>(){
             Some(client) => client,
@@ -59,7 +57,7 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
                     eprintln!("error retrieving user id from database: {}", e);
                     return Outcome::Failure((Status::InternalServerError, AuthError::DbQueryFailure))
                 },
-                db::AuthError::SessionInvalidError => return Outcome::Failure((Status::Unauthorized, AuthError::InvalidSession))
+                db::AuthError::SessionInvalidError => return Outcome::Forward(())
             }
         };
         let email = match db::get_email(&db_client.client, &user_id).await {

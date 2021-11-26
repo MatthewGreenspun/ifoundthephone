@@ -12,12 +12,17 @@ mod route_structs;
 use route_structs::*;
 mod auth;
 pub mod db;
-use db::{AuthError, DbClient};
+use db::DbClient;
 
 #[get("/")]
 pub fn index() -> Template {
     let context = json!({"isSignedIn": false});
     Template::render("index", &context)
+}
+
+#[catch(401)]
+pub fn unauthorized() -> Redirect {
+    Redirect::to(uri!(login_page))
 }
 
 #[get("/signup")]
@@ -78,8 +83,12 @@ pub async fn sign_up(
     });
     Err(Template::render("signup", &context))
 }
+#[get("/login", rank = 1)]
+pub fn login_page_authenticated(user: AuthenticatedUser) -> Redirect {
+    Redirect::to(uri!(profile_page(user.user_id)))
+}
 
-#[get("/login")]
+#[get("/login", rank = 2)]
 pub fn login_page() -> Template {
     let context = json!({});
     Template::render("login", &context)
@@ -168,51 +177,21 @@ pub async fn device_found(
     return Template::render("device_found", &context);
 }
 
-#[get("/profile/<id>")]
+#[get("/profile/<id>", rank = 1)]
 pub async fn profile_page(
     id: String,
-    cookies: &CookieJar<'_>,
-    db_client: &State<DbClient>,
+    user: AuthenticatedUser
 ) -> Result<Template, Redirect> {
-    if !db::id_exists(&db_client.client, &id).await {
+    if user.user_id != id {
         return Err(Redirect::to(uri!(login_page())));
     }
-    let session_id = match cookies.get("session_id") {
-        Some(session_id) => session_id,
-        None => return Err(Redirect::to(uri!(login_page()))),
-    };
-    let session_user_id =
-        match db::get_session_user(&db_client.client, &session_id.value().to_string()).await {
-            Ok(user_id) => {
-                if user_id != id {
-                    return Err(Redirect::to(uri!(login_page())));
-                }
-                user_id
-            }
-            Err(err) => {
-                match err {
-                    AuthError::DbError(e) => eprintln!("error retriving session: {:?}", e),
-                    _ => (),
-                };
-                return Err(Redirect::to(uri!(login_page())));
-            }
-        };
-
-    let email = match db::get_email(&db_client.client, &session_user_id).await {
-        Ok(email) => email,
-        Err(err) => {
-            eprintln!(
-                "error getting email from id of {}.\n error: {:?}",
-                &session_user_id, err
-            );
-            return Err(Redirect::to(uri!(login_page())));
-        }
-    };
-
-    let context = json!({"email": email, "isSignedIn": true, "userId": &id});
+    let context = json!({"email": user.email, "isSignedIn": true, "userId": &id});
     Ok(Template::render("profile", &context))
 }
-
+#[get("/profile/<_id>", rank = 2)]
+pub async fn profile_page_failure(_id: String) -> Redirect {
+    Redirect::to(uri!(login_page()))
+}
 #[get("/logout")]
 pub async fn logout(cookies: &CookieJar<'_>, db_client: &State<DbClient>) -> Redirect {
     let session_id = match cookies.get("session_id") {
