@@ -1,4 +1,6 @@
-use rocket::{form::Form, response::Redirect};
+use rocket::{form::Form, http::{CookieJar, Cookie}, response::Redirect};
+use time::{OffsetDateTime, Duration};
+use chrono::NaiveDate;
 use rocket_dyn_templates::Template;
 use serde_json::json;
 mod email;
@@ -56,13 +58,25 @@ pub fn login_page() -> Template {
 }
 
 #[post("/login", data = "<user>")]
-pub async fn login(user: Form<ReturningUserRequest>) -> Result<Redirect, Template> {
+pub async fn login(user: Form<ReturningUserRequest>, cookies: &CookieJar<'_>) -> Result<Redirect, Template> {
     if user.email.len() > 0 {
         if user.password.len() > 0 {
             if auth::user_is_valid(&user.email, &user.password).await {
                 let user_id = db::get_id(&user.email).await;
                 match user_id {
-                    Ok(id) => return Ok(Redirect::to(uri!(profile_page(id)))),
+                    Ok(id) => {
+                        let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
+                        let chrono_expiration_date = NaiveDate::from_ymd(expiration_date.year(), expiration_date.month().into(), expiration_date.day().into());
+                        let cookie = Cookie::build("session_id", id.clone())
+                            .expires(expiration_date)
+                            .finish();
+                        cookies.add(cookie);
+                        match db::save_session(&id, chrono_expiration_date).await {
+                            Ok(()) => println!("saved session. id: {}, expiration date: {}", &id, &expiration_date),
+                            Err(e) => eprintln!("error saving session: {:?}", e)
+                        };
+                        return Ok(Redirect::to(uri!(profile_page(id))))
+                    },
                     Err(e) => eprint!("error getting user id: {:?}", e),
                 };
             }
@@ -115,15 +129,37 @@ pub async fn device_found(id: String, email_info: Form<DeviceFoundRequest>) -> T
 }
 
 #[get("/profile/<id>")]
-pub async fn profile_page(id: String) -> Template {
+pub async fn profile_page(id: String, cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+    if !db::id_exists(&id).await { return Err(Redirect::to(uri!(login_page()))) }
+    let session_id = match cookies.get("session_id") {
+        Some(session_id) => session_id,
+        None => return Err(Redirect::to(uri!(login_page())))
+    };
+    if !db::session_is_valid(&session_id.value().to_string()).await { return Err(Redirect::to(uri!(login_page()))) }
+
     let email = match db::get_email(&id).await {
         Ok(email) => email,
         Err(err) => {
             eprintln!("error getting email from id of {}.\n error: {:?}", &id, err);
-            let context = json!({});
-            return Template::render("index", &context)
+            return Err(Redirect::to(uri!(login_page())))
         }
     };
+
     let context = json!({"email": email, "isSignedIn": true, "userId": &id});
-    Template::render("profile", &context)
+    Ok(Template::render("profile", &context))
+}
+ 
+#[get("/logout")]
+pub async fn logout(cookies: &CookieJar<'_>) -> Redirect {
+    let session_id = match cookies.get("session_id") {
+        Some(session_id) => session_id.value(),
+        None => return Redirect::to(uri!(index()))
+    };
+    cookies.remove(Cookie::named("session_id"));
+    match db::terminate_session(&session_id.to_string()).await {
+        Ok(()) => (),
+        Err(e) => eprintln!("failed to terminate session with id {}. error: {:?}", &session_id, e)
+    };
+
+    Redirect::to(uri!(index()))
 }
