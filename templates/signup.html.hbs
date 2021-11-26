@@ -9,6 +9,9 @@
   </head>
   <body>
 		<section class="form-page">
+			<section class="form-container">
+				<h1>Sign up for IFoundThePhone</h1>
+				<p>Already have an account? <a href="/login">Login here</a>.</p>
 			<form class="text-form main" method="POST">
 				<h3>Email</h3>
 				{{#if emailError}}
@@ -31,8 +34,9 @@
 				{{else}}
 					<input class="form-input" type="password" name="confirm-password" value="{{confirmPassword}}"></input>
 				{{/if}}
-				<button type="submit" class="submit-btn btn">Sign up for IFoundThePhone</button>
+				<button type="submit" class="submit-btn btn">Sign up</button>
 			</form>
+			</section>
 		</section>
   </body>
 </html>

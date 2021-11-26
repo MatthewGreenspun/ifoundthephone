@@ -9,6 +9,9 @@
   </head>
   <body>
 		<section class="form-page">
+			<section class="form-container">
+				<h1>Log in to IFoundThePhone</h1>
+				<p>Don't have an account? <a href="/signup">Create one here</a>.</p>
 			<form class="text-form main" method="POST">
 				<h3>Email:</h3>
 				{{#if emailError}}
@@ -26,6 +29,7 @@
 				{{/if}}
 				<button type="submit" class="submit-btn btn">Log in</button>
 			</form>
+			</section>	
 		</section>
   </body>
 </html>

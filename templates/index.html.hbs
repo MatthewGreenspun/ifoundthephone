@@ -9,6 +9,7 @@
   </head>
   <body>
     {{>nav isSignedIn=isSignedIn home="true" profileUrl=profileUrl}}
+      <div class="move-down">
       <form id="code-input-form" class="main">
       <h1 class="input-label">Enter a device code: </h1>
       <div>
@@ -16,6 +17,7 @@
         <p class="error-text">{{idError}}</p>
       </div>
       </form> 
+      </div>
     <script src="/static/index.js"></script>
   </body>
 </html>
