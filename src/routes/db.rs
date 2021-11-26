@@ -51,3 +51,80 @@ pub async fn get_email(id: &String) -> Result<String, Error> {
     let email: &str = rows[0].get("email");
     Ok(email.to_string())
 }
+
+pub async fn get_id(email: &String) -> Result<String, Error> {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let rows = client
+        .query("SELECT user_id FROM users WHERE email = $1", &[email])
+        .await?;
+    let email: &str = rows[0].get(0);
+    Ok(email.to_string())
+}
+
+pub async fn id_exists(id: &String) -> bool {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await.expect("failed to connect to database");
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let rows = match client
+        .query("SELECT COUNT(*) FROM users WHERE user_id = $1", &[id])
+        .await {
+            Ok(rows) => rows,
+            Err(_) => return false
+        };
+
+    let count: i64 = rows[0].get(0);
+    if count == 0 {false} else {true}
+}
+
+pub async fn email_exists(email: &String) -> bool {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await.expect("failed to connect to database");
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let rows = match client
+        .query("SELECT COUNT(*) FROM users WHERE email = $1", &[email])
+        .await {
+            Ok(rows) => rows, 
+            Err(_) => return false
+        };
+
+    let count: i64 = rows[0].get(0);
+    if count == 0 {false} else {true}
+}
+
+pub async fn get_hash_and_salt(email: &String) -> Result<(String, String), Error> {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let rows = client
+        .query("SELECT pw_hash, pw_salt FROM users WHERE email = $1", &[email])
+        .await?;
+    let hash: String = rows[0].get("pw_hash");
+    let salt: String = rows[0].get("pw_salt");
+    Ok((hash, salt))
+}
