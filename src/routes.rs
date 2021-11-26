@@ -58,6 +58,12 @@ pub async fn sign_up(
         return Err(Template::render("signup", &context));
     }
     if new_user.password == new_user.confirm_password {
+        if db::email_exists(&db_client.client, &new_user.email).await {
+            let context = json!({
+                "emailError" : "account already exists",
+            });
+            return Err(Template::render("signup", &context));
+        }
         let user_id = db::gen_user_id();
         let _ = db::save_user(
             &db_client.client,
