@@ -26,6 +26,7 @@ async fn rocket() -> _ {
             "/",
             routes![
                 routes::index,
+                routes::index_authenticated,
                 routes::sign_up,
                 routes::sign_up_page,
                 routes::login,

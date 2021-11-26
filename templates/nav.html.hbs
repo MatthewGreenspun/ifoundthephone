@@ -2,6 +2,11 @@
   <h1>IFoundThePhone</h1>
   <section class="btns">
     {{#if isSignedIn}}
+      {{#if home}}
+        <button class="btn" onclick="window.location.href='{{profileUrl}}'">
+          Profile
+        </button>
+      {{/if}}
       <button class="btn" onclick="window.location.href='/logout'">
         Logout
       </button>

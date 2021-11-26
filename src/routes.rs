@@ -14,7 +14,13 @@ mod auth;
 pub mod db;
 use db::DbClient;
 
-#[get("/")]
+#[get("/", rank = 1)]
+pub fn index_authenticated(user: AuthenticatedUser) -> Template {
+    let context = json!({"isSignedIn": true, "profileUrl": format!("/profile/{}", user.user_id)});
+    Template::render("index", &context)
+}
+
+#[get("/", rank = 2)]
 pub fn index() -> Template {
     let context = json!({"isSignedIn": false});
     Template::render("index", &context)
