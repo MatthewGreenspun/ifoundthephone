@@ -2,7 +2,16 @@ use ring::digest::SHA512_OUTPUT_LEN;
 use ring::{pbkdf2, rand::SecureRandom};
 use std::num::NonZeroU32;
 use hex::{FromHex, ToHex};
+use rand::{Rng, distributions::Alphanumeric};
 use super::db::{email_exists, get_hash_and_salt};
+
+pub fn gen_session_id() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(9)
+        .map(char::from)
+        .collect()
+}
 
 pub fn gen_salt() -> [u8; SHA512_OUTPUT_LEN] {
     let mut salt = [0u8; SHA512_OUTPUT_LEN];
