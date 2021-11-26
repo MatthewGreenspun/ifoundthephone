@@ -1,15 +1,15 @@
 use super::route_structs::DeviceFoundRequest;
+use image::imageops::overlay;
+use image::{DynamicImage, ImageError, Rgb, RgbImage};
+use imageproc::{drawing::draw_filled_rect_mut, drawing::draw_text_mut, rect::Rect};
 use lettre::message::Body;
+use lettre::message::{header::ContentType, Attachment, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
-use lettre::message::{Attachment, header::ContentType, MultiPart, SinglePart};
 use qrcode::QrCode;
-use image::{DynamicImage, ImageError, Rgb, RgbImage};
-use image::imageops::overlay;
-use imageproc::{drawing::draw_text_mut, drawing::draw_filled_rect_mut, rect::Rect};
-use rusttype::{Scale, Font, point};
+use rusttype::{point, Font, Scale};
 
-const PHONE_WIDTH: u32 = 375; 
+const PHONE_WIDTH: u32 = 375;
 const PHONE_HEIGHT: u32 = 812;
 
 fn get_text_width(font: &Font, text: &str, scale: Scale) -> u32 {
@@ -42,7 +42,12 @@ fn get_img_buf(id: &str) -> std::result::Result<Vec<u8>, ImageError> {
     let text_x = (PHONE_WIDTH - get_text_width(&font, text, scale.clone())) / 2;
 
     draw_text_mut(&mut full_image, black, text_x, text_y, scale, &font, text);
-    overlay(&mut full_image, &qrcode_image, (PHONE_WIDTH - qrcode_image.width()) / 2, text_y + 20);
+    overlay(
+        &mut full_image,
+        &qrcode_image,
+        (PHONE_WIDTH - qrcode_image.width()) / 2,
+        text_y + 20,
+    );
 
     let d_image = DynamicImage::ImageRgb8(full_image);
     let mut buf = vec![];
@@ -87,11 +92,7 @@ pub fn email_new_user(user_id: &str, user_email: &str) {
         .subject("Welcome to IFoundThePhone!")
         .multipart(
             MultiPart::mixed()
-                .multipart(
-                MultiPart::related()
-                    .singlepart(SinglePart::html(body
-                    ))
-                )
+                .multipart(MultiPart::related().singlepart(SinglePart::html(body)))
                 .singlepart(
                     Attachment::new_inline(String::from("qrcodeimg"))
                         .body(Body::new(image_buf), "image/png".parse().unwrap()),
