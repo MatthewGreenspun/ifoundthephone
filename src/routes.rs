@@ -56,28 +56,38 @@ pub fn login_page() -> Template {
 }
 
 #[post("/login", data = "<user>")]
-pub fn login(user: Form<ReturningUserRequest>) -> Template {
+pub async fn login(user: Form<ReturningUserRequest>) -> Result<Redirect, Template> {
     if user.email.len() > 0 {
         if user.password.len() > 0 {
-            //TODO add actual validation for password
-            let context = json!({"isSignedIn": true, "email": &user.email});
-            return Template::render("profile", &context);
+            if auth::user_is_valid(&user.email, &user.password).await {
+                let user_id = db::get_id(&user.email).await;
+                match user_id {
+                    Ok(id) => return Ok(Redirect::to(uri!(profile_page(id)))),
+                    Err(e) => eprint!("error getting user id: {:?}", e),
+                };
+            }
+            let context = json!({"email": &user.email,"passwordError": "email or password is incorrect"});
+            return Err(Template::render("login", &context))
         }
         let context = json!({
             "email": &user.email,
             "passwordError": "password is required",
         });
-        return Template::render("login", &context);
+        return Err(Template::render("login", &context))
     }
     let context = json!({
         "emailError": "email is required",
         "password": &user.password
     });
-    Template::render("login", &context)
+    Err(Template::render("login", &context))
 }
 
 #[get("/device/<id>")]
-pub fn device_found_page(id: String) -> Template {
+pub async fn device_found_page(id: String) -> Template {
+    if !db::id_exists(&id).await {
+        let context = json!({"idError": format!("id {} does not exist", id)});
+        return Template::render("index", &context);
+    }
     let context = json!({ "deviceId": &id });
     Template::render("device_found", &context)
 }
