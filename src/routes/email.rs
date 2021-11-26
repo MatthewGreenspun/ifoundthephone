@@ -1,4 +1,4 @@
-use super::form_structs::DeviceFoundRequest;
+use super::route_structs::DeviceFoundRequest;
 use lettre::message::Body;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
