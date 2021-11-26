@@ -2,6 +2,7 @@ use super::auth;
 use hex::ToHex;
 use rand::{distributions::Alphanumeric, Rng};
 use tokio_postgres::{Error, NoTls};
+use chrono::naive::NaiveDate;
 
 pub fn gen_user_id() -> String {
     rand::thread_rng()
@@ -30,6 +31,25 @@ pub async fn save_user(user_id: &String, email: &String, password: &String) -> R
         .execute(
             "INSERT INTO users (user_id, email, pw_hash, pw_salt) VALUES ($1, $2, $3, $4)",
             &[&user_id, email, hash_str, salt_str],
+        )
+        .await?;
+    Ok(())
+}
+
+pub async fn save_session(session_id: &String, expiration_date: NaiveDate) -> Result<(), Error> {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    client
+        .execute(
+            "INSERT INTO sessions (session_id, expires) VALUES ($1, $2)",
+            &[session_id, &expiration_date],
         )
         .await?;
     Ok(())
@@ -127,4 +147,40 @@ pub async fn get_hash_and_salt(email: &String) -> Result<(String, String), Error
     let hash: String = rows[0].get("pw_hash");
     let salt: String = rows[0].get("pw_salt");
     Ok((hash, salt))
+}
+
+pub async fn session_is_valid(session_id: &String) -> bool {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await.expect("failed to connect to database");
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    let _ = client.execute("DELETE FROM sessions WHERE NOW() > expires",&[]).await;
+    let rows = match client
+        .query("SELECT COUNT(*) FROM sessions WHERE session_id = $1", &[session_id]).await {
+            Ok(rows) => rows,
+            Err(_) => return false
+        };
+
+    let count: i64 = rows[0].get(0);
+    if count == 0 {false} else {true}
+}
+
+pub async fn terminate_session(session_id: &String) -> Result<(), Error> {
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
+
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    client.execute("DELETE FROM sessions WHERE session_id = $1",&[session_id]).await?;
+
+    Ok(())
 }
