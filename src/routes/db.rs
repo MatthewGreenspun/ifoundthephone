@@ -4,6 +4,11 @@ use rand::{distributions::Alphanumeric, Rng};
 use tokio_postgres::{Error, NoTls};
 use chrono::naive::NaiveDate;
 
+pub enum AuthError {
+    DbError(Error), 
+    SessionInvalidError
+}
+
 pub fn gen_user_id() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -36,7 +41,7 @@ pub async fn save_user(user_id: &String, email: &String, password: &String) -> R
     Ok(())
 }
 
-pub async fn save_session(session_id: &String, expiration_date: NaiveDate) -> Result<(), Error> {
+pub async fn save_session(session_id: &String, user_id: &String, expiration_date: NaiveDate) -> Result<(), Error> {
     let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
     let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await?;
 
@@ -48,8 +53,8 @@ pub async fn save_session(session_id: &String, expiration_date: NaiveDate) -> Re
 
     client
         .execute(
-            "INSERT INTO sessions (session_id, expires) VALUES ($1, $2)",
-            &[session_id, &expiration_date],
+            "INSERT INTO sessions (session_id, user_id, expires) VALUES ($1, $2, $3)",
+            &[session_id, user_id, &expiration_date],
         )
         .await?;
     Ok(())
@@ -149,7 +154,7 @@ pub async fn get_hash_and_salt(email: &String) -> Result<(String, String), Error
     Ok((hash, salt))
 }
 
-pub async fn session_is_valid(session_id: &String) -> bool {
+pub async fn get_session_user(session_id: &String) -> Result<String, AuthError> {
     let postgres_uri = std::env::var("DB_URI").expect("environment variable not found");
     let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls).await.expect("failed to connect to database");
 
@@ -161,13 +166,16 @@ pub async fn session_is_valid(session_id: &String) -> bool {
 
     let _ = client.execute("DELETE FROM sessions WHERE NOW() > expires",&[]).await;
     let rows = match client
-        .query("SELECT COUNT(*) FROM sessions WHERE session_id = $1", &[session_id]).await {
-            Ok(rows) => rows,
-            Err(_) => return false
+        .query("SELECT user_id FROM sessions WHERE session_id = $1", &[session_id]).await {
+            Ok(rows) => {
+                if rows.len() == 0 {return Err(AuthError::SessionInvalidError)}
+                rows
+            },
+            Err(e) => return Err(AuthError::DbError(e)) 
         };
-
-    let count: i64 = rows[0].get(0);
-    if count == 0 {false} else {true}
+    
+    let user_id: String = rows[0].get(0);
+    Ok(user_id)
 }
 
 pub async fn terminate_session(session_id: &String) -> Result<(), Error> {

@@ -4,10 +4,11 @@ use chrono::NaiveDate;
 use rocket_dyn_templates::Template;
 use serde_json::json;
 mod email;
-mod form_structs;
-use form_structs::*;
+mod route_structs;
+use route_structs::*;
 mod auth;
 mod db;
+use db::AuthError;
 
 #[get("/")]
 pub fn index() -> Template {
@@ -22,31 +23,42 @@ pub fn sign_up_page() -> Template {
 }
 
 #[post("/signup", data = "<new_user>")]
-pub async fn sign_up(new_user: Form<NewUserRequest>) -> Result<Redirect, Template> {
-    if new_user.email.len() > 0 {
-        if new_user.password.len() > 0 {
-            if new_user.password == new_user.confirm_password {
-                let user_id = db::gen_user_id();
-                let _ = db::save_user(&user_id, &new_user.email, &new_user.password).await;
-                email::email_new_user(&user_id, &new_user.email);
-                return Ok(Redirect::to(uri!(profile_page(user_id))));
-            }
-            let context = json!({
-                "email": &new_user.email,
-                "password": &new_user.password,
-                "confirmPasswordError": "passwords don't match"
-            });
-            return Err(Template::render("signup", &context));
-        }
+pub async fn sign_up(new_user: Form<NewUserRequest>, cookies: &CookieJar<'_>) -> Result<Redirect, Template> {
+    if new_user.email.len() <= 0 {
+        let context = json!({
+            "emailError": "email is required",
+            "password": &new_user.password
+        });
+        return Err(Template::render("signup", &context))
+    }
+    if new_user.password.len() <= 0 {
         let context = json!({
             "email": &new_user.email,
             "passwordError": "password is required",
         });
-        return Err(Template::render("signup", &context));
+        return Err(Template::render("signup", &context))
+    }
+    if new_user.password == new_user.confirm_password {
+        let user_id = db::gen_user_id();
+        let _ = db::save_user(&user_id, &new_user.email, &new_user.password).await;
+        email::email_new_user(&user_id, &new_user.email);
+        let session_id = auth::gen_session_id();
+        let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
+        let chrono_expiration_date = NaiveDate::from_ymd(expiration_date.year(), expiration_date.month().into(), expiration_date.day().into());
+        let cookie = Cookie::build("session_id", session_id.clone())
+            .expires(expiration_date)
+            .finish();
+        cookies.add(cookie);
+        match db::save_session(&session_id,&user_id, chrono_expiration_date).await {
+            Ok(()) => println!("saved session. id: {}, expiration date: {}", &user_id, &expiration_date),
+            Err(e) => eprintln!("error saving session: {:?}", e)
+        };
+        return Ok(Redirect::to(uri!(profile_page(user_id))))
     }
     let context = json!({
-        "emailError": "email is required",
-        "password": &new_user.password
+        "email": &new_user.email,
+        "password": &new_user.password,
+        "confirmPasswordError": "passwords don't match"
     });
     Err(Template::render("signup", &context))
 }
@@ -59,41 +71,46 @@ pub fn login_page() -> Template {
 
 #[post("/login", data = "<user>")]
 pub async fn login(user: Form<ReturningUserRequest>, cookies: &CookieJar<'_>) -> Result<Redirect, Template> {
-    if user.email.len() > 0 {
-        if user.password.len() > 0 {
-            if auth::user_is_valid(&user.email, &user.password).await {
-                let user_id = db::get_id(&user.email).await;
-                match user_id {
-                    Ok(id) => {
-                        let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
-                        let chrono_expiration_date = NaiveDate::from_ymd(expiration_date.year(), expiration_date.month().into(), expiration_date.day().into());
-                        let cookie = Cookie::build("session_id", id.clone())
-                            .expires(expiration_date)
-                            .finish();
-                        cookies.add(cookie);
-                        match db::save_session(&id, chrono_expiration_date).await {
-                            Ok(()) => println!("saved session. id: {}, expiration date: {}", &id, &expiration_date),
-                            Err(e) => eprintln!("error saving session: {:?}", e)
-                        };
-                        return Ok(Redirect::to(uri!(profile_page(id))))
-                    },
-                    Err(e) => eprint!("error getting user id: {:?}", e),
-                };
-            }
-            let context = json!({"email": &user.email,"passwordError": "email or password is incorrect"});
-            return Err(Template::render("login", &context))
-        }
+    if user.email.len() <= 0 {
+        let context = json!({
+            "emailError": "email is required",
+            "password": &user.password
+        });
+        return Err(Template::render("login", &context))
+    }
+    if user.password.len() <= 0 {
         let context = json!({
             "email": &user.email,
             "passwordError": "password is required",
         });
         return Err(Template::render("login", &context))
     }
-    let context = json!({
-        "emailError": "email is required",
-        "password": &user.password
-    });
-    Err(Template::render("login", &context))
+    if !auth::user_is_valid(&user.email, &user.password).await {
+        let context = json!({"email": &user.email,"passwordError": "email or password is incorrect"});
+        return Err(Template::render("login", &context))
+    }
+    let user_id = db::get_id(&user.email).await;
+    match user_id {
+        Ok(id) => {
+            let session_id = auth::gen_session_id();
+            let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
+            let chrono_expiration_date = NaiveDate::from_ymd(expiration_date.year(), expiration_date.month().into(), expiration_date.day().into());
+            let cookie = Cookie::build("session_id", session_id.clone())
+                .expires(expiration_date)
+                .finish();
+            cookies.add(cookie);
+            match db::save_session(&session_id,&id, chrono_expiration_date).await {
+                Ok(()) => println!("saved session. id: {}, expiration date: {}", &id, &expiration_date),
+                Err(e) => eprintln!("error saving session: {:?}", e)
+            };
+            return Ok(Redirect::to(uri!(profile_page(id))))
+        },
+        Err(e) => { 
+            eprint!("error getting user id: {:?}", e);
+            let context = json!({"email": &user.email,"passwordError": "email or password is incorrect"});
+            return Err(Template::render("login", &context))
+        }
+    };
 }
 
 #[get("/device/<id>")]
@@ -135,12 +152,24 @@ pub async fn profile_page(id: String, cookies: &CookieJar<'_>) -> Result<Templat
         Some(session_id) => session_id,
         None => return Err(Redirect::to(uri!(login_page())))
     };
-    if !db::session_is_valid(&session_id.value().to_string()).await { return Err(Redirect::to(uri!(login_page()))) }
+    let session_user_id = match db::get_session_user(&session_id.value().to_string()).await { 
+        Ok(user_id) => {
+            if user_id != id {return Err(Redirect::to(uri!(login_page())))}
+            user_id
+        },
+        Err(err) => {
+            match err {
+                AuthError::DbError(e) => eprintln!("error retriving session: {:?}", e),
+                _ => ()
+            };
+            return Err(Redirect::to(uri!(login_page()))) 
+        }
+    };
 
-    let email = match db::get_email(&id).await {
+    let email = match db::get_email(&session_user_id).await {
         Ok(email) => email,
         Err(err) => {
-            eprintln!("error getting email from id of {}.\n error: {:?}", &id, err);
+            eprintln!("error getting email from id of {}.\n error: {:?}", &session_user_id, err);
             return Err(Redirect::to(uri!(login_page())))
         }
     };
