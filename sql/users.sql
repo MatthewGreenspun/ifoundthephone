@@ -1,6 +1,6 @@
 CREATE TABLE users (
 	user_id 				VARCHAR(10) NOT NULL UNIQUE,
 	email   				VARCHAR(400) NOT NULL UNIQUE,
-	pw_hash 				VARCHAR(200) NOT NULL,
-	pw_salt 				VARCHAR(200) NOT NULL
+	pw_hash 				VARCHAR(500) NOT NULL,
+	pw_salt 				VARCHAR(500) NOT NULL
 )
