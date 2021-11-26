@@ -1,9 +1,10 @@
+use super::db::{email_exists, get_hash_and_salt};
+use hex::{FromHex, ToHex};
+use rand::{distributions::Alphanumeric, Rng};
 use ring::digest::SHA512_OUTPUT_LEN;
 use ring::{pbkdf2, rand::SecureRandom};
 use std::num::NonZeroU32;
-use hex::{FromHex, ToHex};
-use rand::{Rng, distributions::Alphanumeric};
-use super::db::{email_exists, get_hash_and_salt};
+use tokio_postgres::Client;
 
 pub fn gen_session_id() -> String {
     rand::thread_rng()
@@ -33,20 +34,24 @@ pub fn gen_hash(salt: &[u8], password: &String) -> [u8; SHA512_OUTPUT_LEN] {
     hash
 }
 
-pub async fn user_is_valid(email: &String, password: &String) -> bool {
-    if !email_exists(email).await {
-        return false
+pub async fn user_is_valid(client: &Client, email: &String, password: &String) -> bool {
+    if !email_exists(&client, email).await {
+        return false;
     }
 
-    let (true_hash, salt) = match get_hash_and_salt(email).await {
-        Ok(hash_and_salt) => hash_and_salt, 
+    let (true_hash, salt) = match get_hash_and_salt(&client, email).await {
+        Ok(hash_and_salt) => hash_and_salt,
         Err(e) => {
             eprintln!("error fetching hash and salt: {:?}", e);
-            return false
+            return false;
         }
     };
     let salt_buf = <[u8; SHA512_OUTPUT_LEN]>::from_hex(salt).expect("decoding salt failed");
     let hash = gen_hash(&salt_buf, password).encode_hex::<String>();
 
-    if true_hash == hash {true} else {false}
+    if true_hash == hash {
+        true
+    } else {
+        false
+    }
 }

@@ -3,10 +3,23 @@ extern crate rocket;
 use rocket::fs::{relative, FileServer};
 use rocket_dyn_templates::Template;
 mod routes;
+use routes::db::DbClient;
+use tokio_postgres::NoTls;
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
     dotenv::dotenv().expect("failed to load environment variables");
+
+    let postgres_uri = std::env::var("DB_URI").expect("environment variable 'DB_URI' not found");
+    let (client, connection) = tokio_postgres::connect(&postgres_uri, NoTls)
+        .await
+        .expect("failed to connnect to database");
+    rocket::tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("database connection error: {}", e);
+        }
+    });
+
     rocket::build()
         .mount("/static", FileServer::from(relative!("/static")))
         .mount(
@@ -23,5 +36,6 @@ fn rocket() -> _ {
                 routes::logout
             ],
         )
+        .manage(DbClient { client })
         .attach(Template::fairing())
 }
