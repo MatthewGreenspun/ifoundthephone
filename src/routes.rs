@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use rocket::{
     form::Form,
     http::{Cookie, CookieJar},
@@ -58,28 +57,16 @@ pub async fn sign_up(
         .await;
         email::email_new_user(&user_id, &new_user.email);
         let session_id = auth::gen_session_id();
-        let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
-        let chrono_expiration_date = NaiveDate::from_ymd(
-            expiration_date.year(),
-            expiration_date.month().into(),
-            expiration_date.day().into(),
-        );
-        let cookie = Cookie::build("session_id", session_id.clone())
-            .expires(expiration_date)
-            .finish();
-        cookies.add(cookie);
+        auth::set_session_cookie(&cookies, session_id.clone(), Duration::days(1));
         match db::save_session(
             &db_client.client,
             &session_id,
             &user_id,
-            chrono_expiration_date,
+            OffsetDateTime::now_utc() + Duration::days(1)
         )
         .await
         {
-            Ok(()) => println!(
-                "saved session. id: {}, expiration date: {}",
-                &user_id, &expiration_date
-            ),
+            Ok(()) => (),
             Err(e) => eprintln!("error saving session: {:?}", e),
         };
         return Ok(Redirect::to(uri!(profile_page(user_id))));
@@ -127,23 +114,11 @@ pub async fn login(
     match user_id {
         Ok(id) => {
             let session_id = auth::gen_session_id();
-            let expiration_date = OffsetDateTime::now_utc() + Duration::days(1);
-            let chrono_expiration_date = NaiveDate::from_ymd(
-                expiration_date.year(),
-                expiration_date.month().into(),
-                expiration_date.day().into(),
-            );
-            let cookie = Cookie::build("session_id", session_id.clone())
-                .expires(expiration_date)
-                .finish();
-            cookies.add(cookie);
-            match db::save_session(&db_client.client, &session_id, &id, chrono_expiration_date)
+            auth::set_session_cookie(&cookies, session_id.clone(), Duration::days(1));
+            match db::save_session(&db_client.client, &session_id, &id, OffsetDateTime::now_utc() + Duration::days(1))
                 .await
             {
-                Ok(()) => println!(
-                    "saved session. id: {}, expiration date: {}",
-                    &id, &expiration_date
-                ),
+                Ok(()) => (),
                 Err(e) => eprintln!("error saving session: {:?}", e),
             };
             return Ok(Redirect::to(uri!(profile_page(id))));

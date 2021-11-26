@@ -2,6 +2,7 @@ use super::auth;
 use chrono::naive::NaiveDate;
 use hex::ToHex;
 use rand::{distributions::Alphanumeric, Rng};
+use time::OffsetDateTime;
 use tokio_postgres::{Client, Error};
 
 pub enum AuthError {
@@ -45,8 +46,13 @@ pub async fn save_session(
     client: &Client,
     session_id: &String,
     user_id: &String,
-    expiration_date: NaiveDate,
+    expiration_date_offset: OffsetDateTime,
 ) -> Result<(), Error> {
+    let expiration_date = NaiveDate::from_ymd(
+        expiration_date_offset.year(),
+        expiration_date_offset.month().into(),
+        expiration_date_offset.day().into(),
+    );
     client
         .execute(
             "INSERT INTO sessions (session_id, user_id, expires) VALUES ($1, $2, $3)",

@@ -5,6 +5,8 @@ use ring::digest::SHA512_OUTPUT_LEN;
 use ring::{pbkdf2, rand::SecureRandom};
 use std::num::NonZeroU32;
 use tokio_postgres::Client;
+use rocket::http::{CookieJar, Cookie};
+use time::{Duration, OffsetDateTime};
 
 pub fn gen_session_id() -> String {
     rand::thread_rng()
@@ -49,9 +51,13 @@ pub async fn user_is_valid(client: &Client, email: &String, password: &String) -
     let salt_buf = <[u8; SHA512_OUTPUT_LEN]>::from_hex(salt).expect("decoding salt failed");
     let hash = gen_hash(&salt_buf, password).encode_hex::<String>();
 
-    if true_hash == hash {
-        true
-    } else {
-        false
-    }
+    true_hash == hash 
+}
+
+pub fn set_session_cookie(cookies: &CookieJar<'_>, session_id: String, max_age: Duration) {
+    let expiration_date = OffsetDateTime::now_utc() + max_age;
+    let cookie = Cookie::build("session_id", session_id.clone())
+        .expires(expiration_date)
+        .finish();
+    cookies.add(cookie);
 }
