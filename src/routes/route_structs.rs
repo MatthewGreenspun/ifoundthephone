@@ -1,7 +1,7 @@
-use rocket::form::FromForm;
-use rocket::request::{ Request, FromRequest, Outcome};
-use rocket::http::{Status};
 use super::db;
+use rocket::form::FromForm;
+use rocket::http::Status;
+use rocket::request::{FromRequest, Outcome, Request};
 
 #[derive(FromForm)]
 pub struct NewUserRequest {
@@ -26,15 +26,15 @@ pub struct DeviceFoundRequest {
 }
 
 pub struct AuthenticatedUser {
-    pub user_id: String, 
-    pub session_id: String, 
+    pub user_id: String,
+    pub session_id: String,
     pub email: String,
 }
 
 #[derive(Debug)]
 pub enum AuthError {
     DbClientNotFound,
-    DbQueryFailure
+    DbQueryFailure,
 }
 
 #[rocket::async_trait]
@@ -44,30 +44,39 @@ impl<'r> FromRequest<'r> for AuthenticatedUser {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, AuthError> {
         let session_id = match req.cookies().get("session_id") {
             Some(cookie) => cookie.value().to_string(),
-            None => return Outcome::Forward(())
+            None => return Outcome::Forward(()),
         };
-        let db_client = match req.rocket().state::<db::DbClient>(){
+        let db_client = match req.rocket().state::<db::DbClient>() {
             Some(client) => client,
-            None => return Outcome::Failure((Status::InternalServerError, AuthError::DbClientNotFound))
+            None => {
+                return Outcome::Failure((Status::InternalServerError, AuthError::DbClientNotFound))
+            }
         };
         let user_id = match db::get_session_user(&db_client.client, &session_id).await {
             Ok(user_id) => user_id,
             Err(e) => match e {
                 db::AuthError::DbError(e) => {
                     eprintln!("error retrieving user id from database: {}", e);
-                    return Outcome::Failure((Status::InternalServerError, AuthError::DbQueryFailure))
-                },
-                db::AuthError::SessionInvalidError => return Outcome::Forward(())
-            }
+                    return Outcome::Failure((
+                        Status::InternalServerError,
+                        AuthError::DbQueryFailure,
+                    ));
+                }
+                db::AuthError::SessionInvalidError => return Outcome::Forward(()),
+            },
         };
         let email = match db::get_email(&db_client.client, &user_id).await {
             Ok(email) => email,
             Err(e) => {
                 eprintln!("error retrieving email from database: {}", e);
-                return Outcome::Failure((Status::InternalServerError, AuthError::DbQueryFailure))
+                return Outcome::Failure((Status::InternalServerError, AuthError::DbQueryFailure));
             }
         };
 
-        Outcome::Success(AuthenticatedUser {user_id, session_id, email})
+        Outcome::Success(AuthenticatedUser {
+            user_id,
+            session_id,
+            email,
+        })
     }
 }

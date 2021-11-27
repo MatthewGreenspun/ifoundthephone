@@ -13,7 +13,8 @@ pub enum AuthError {
 pub struct DbClient {
     pub client: Client,
 }
-
+ 
+/// generates a 7 digit alphanumeric user id
 pub fn gen_user_id() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -62,6 +63,7 @@ pub async fn save_session(
     Ok(())
 }
 
+/// returns the email of a user given the user ID
 pub async fn get_email(client: &Client, id: &String) -> Result<String, Error> {
     let rows = client
         .query("SELECT email FROM users WHERE user_id = $1", &[id])
@@ -70,6 +72,7 @@ pub async fn get_email(client: &Client, id: &String) -> Result<String, Error> {
     Ok(email.to_string())
 }
 
+/// returns the ID of a user given their email
 pub async fn get_id(client: &Client, email: &String) -> Result<String, Error> {
     let rows = client
         .query("SELECT user_id FROM users WHERE email = $1", &[email])
@@ -112,6 +115,7 @@ pub async fn email_exists(client: &Client, email: &String) -> bool {
     }
 }
 
+///returns the password hash and salt of a user given their email
 pub async fn get_hash_and_salt(client: &Client, email: &String) -> Result<(String, String), Error> {
     let rows = client
         .query(
@@ -124,6 +128,7 @@ pub async fn get_hash_and_salt(client: &Client, email: &String) -> Result<(Strin
     Ok((hash, salt))
 }
 
+///returns the user ID of a user given their session ID
 pub async fn get_session_user(client: &Client, session_id: &String) -> Result<String, AuthError> {
     let _ = client
         .execute("DELETE FROM sessions WHERE NOW() > expires", &[])

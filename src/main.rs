@@ -37,7 +37,7 @@ async fn rocket() -> _ {
                 routes::profile_page,
                 routes::profile_page_failure,
                 routes::logout
-            ]
+            ],
         )
         .register("/", catchers![routes::unauthorized])
         .manage(DbClient { client })

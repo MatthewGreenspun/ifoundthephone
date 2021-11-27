@@ -79,7 +79,7 @@ pub async fn sign_up(
             &db_client.client,
             &session_id,
             &user_id,
-            OffsetDateTime::now_utc() + Duration::days(1)
+            OffsetDateTime::now_utc() + Duration::days(1),
         )
         .await
         {
@@ -136,8 +136,13 @@ pub async fn login(
         Ok(id) => {
             let session_id = auth::gen_session_id();
             auth::set_session_cookie(&cookies, session_id.clone(), Duration::days(1));
-            match db::save_session(&db_client.client, &session_id, &id, OffsetDateTime::now_utc() + Duration::days(1))
-                .await
+            match db::save_session(
+                &db_client.client,
+                &session_id,
+                &id,
+                OffsetDateTime::now_utc() + Duration::days(1),
+            )
+            .await
             {
                 Ok(()) => (),
                 Err(e) => eprintln!("error saving session: {:?}", e),
@@ -190,10 +195,7 @@ pub async fn device_found(
 }
 
 #[get("/profile/<id>", rank = 1)]
-pub async fn profile_page(
-    id: String,
-    user: AuthenticatedUser
-) -> Result<Template, Redirect> {
+pub async fn profile_page(id: String, user: AuthenticatedUser) -> Result<Template, Redirect> {
     if user.user_id != id {
         return Err(Redirect::to(uri!(login_page())));
     }
