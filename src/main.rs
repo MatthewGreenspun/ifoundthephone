@@ -36,7 +36,9 @@ async fn rocket() -> _ {
                 routes::device_found,
                 routes::profile_page,
                 routes::profile_page_failure,
-                routes::logout
+                routes::logout,
+                routes::create_device,
+                routes::delete_device
             ],
         )
         .register("/", catchers![routes::unauthorized])

@@ -195,17 +195,25 @@ pub async fn device_found(
 }
 
 #[get("/profile/<id>", rank = 1)]
-pub async fn profile_page(id: String, user: AuthenticatedUser) -> Result<Template, Redirect> {
+pub async fn profile_page(
+    id: String,
+    user: AuthenticatedUser,
+    db_client: &State<DbClient>,
+) -> Result<Template, Redirect> {
     if user.user_id != id {
         return Err(Redirect::to(uri!(login_page())));
     }
-    let context = json!({"email": user.email, "isSignedIn": true, "userId": &id});
+    let devices = db::get_devices(&db_client.client, &user.user_id).await;
+    let context =
+        json!({"email": user.email, "isSignedIn": true, "userId": &id, "devices": devices});
     Ok(Template::render("profile", &context))
 }
+
 #[get("/profile/<_id>", rank = 2)]
 pub async fn profile_page_failure(_id: String) -> Redirect {
     Redirect::to(uri!(login_page()))
 }
+
 #[get("/logout")]
 pub async fn logout(cookies: &CookieJar<'_>, db_client: &State<DbClient>) -> Redirect {
     let session_id = match cookies.get("session_id") {
@@ -222,4 +230,40 @@ pub async fn logout(cookies: &CookieJar<'_>, db_client: &State<DbClient>) -> Red
     };
 
     Redirect::to(uri!(index()))
+}
+
+#[get("/device/create?<name>")]
+pub async fn create_device(
+    name: String,
+    user: AuthenticatedUser,
+    db_client: &State<DbClient>,
+) -> Redirect {
+    if name.len() == 0 {
+        return Redirect::to(uri!(profile_page(user.user_id)));
+    }
+
+    match db::save_device(&db_client.client, &user.user_id, &name).await {
+        Ok(()) => (),
+        Err(e) => eprintln!("error saving device: {}", e),
+    };
+
+    Redirect::to(uri!(profile_page(user.user_id)))
+}
+
+#[get("/device/delete?<id>")]
+pub async fn delete_device(
+    id: String,
+    user: AuthenticatedUser,
+    db_client: &State<DbClient>,
+) -> Redirect {
+    if id.len() == 0 {
+        return Redirect::to(uri!(profile_page(user.user_id)));
+    }
+
+    match db::delete_device(&db_client.client, &user.user_id, &id).await {
+        Ok(()) => (),
+        Err(e) => eprintln!("error saving device: {}", e),
+    };
+
+    Redirect::to(uri!(profile_page(user.user_id)))
 }

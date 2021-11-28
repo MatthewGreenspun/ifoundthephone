@@ -13,7 +13,7 @@ pub enum AuthError {
 pub struct DbClient {
     pub client: Client,
 }
- 
+
 /// generates a 7 digit alphanumeric user id
 pub fn gen_user_id() -> String {
     rand::thread_rng()
@@ -61,6 +61,59 @@ pub async fn save_session(
         )
         .await?;
     Ok(())
+}
+
+pub async fn save_device(
+    client: &Client,
+    user_id: &String,
+    device_name: &String,
+) -> Result<(), Error> {
+    let device_id = gen_user_id();
+    client
+        .execute(
+            "INSERT INTO devices (device_id, user_id, device_name) VALUES ($1, $2, $3)",
+            &[&device_id, user_id, device_name],
+        )
+        .await?;
+    Ok(())
+}
+
+pub async fn delete_device(
+    client: &Client,
+    user_id: &String,
+    device_id: &String,
+) -> Result<(), Error> {
+    client
+        .execute(
+            "DELETE FROM devices WHERE device_id = $1 AND user_id = $2",
+            &[device_id, user_id],
+        )
+        .await?;
+    Ok(())
+}
+
+pub async fn get_devices(client: &Client, user_id: &String) -> Vec<(String, String)> {
+    let rows = match client
+        .query(
+            "SELECT device_id, device_name FROM devices WHERE user_id = $1",
+            &[user_id],
+        )
+        .await
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("error retrieving devices from database: {}", e);
+            return Vec::new();
+        }
+    };
+    rows.iter()
+        .map(|row| {
+            (
+                row.get::<'_, &str, &str>("device_name").to_string(),
+                row.get::<'_, &str, &str>("device_id").to_string(),
+            )
+        })
+        .collect::<Vec<(String, String)>>()
 }
 
 /// returns the email of a user given the user ID
