@@ -8,23 +8,27 @@
     <title>IFoundThePhone - Sign Up</title>
   </head>
   <body>
-		<section class="main">
-			<h1 class="text-lg text-center">Thank you for finding device {{deviceId}}</h1>
-			<h2 class="text-md text-center">Please provide some information to help the owner reclaim this device. </h2>
-			<form class="text-form main" method="POST">
-				<h3>Message</h3>
-				{{#if messageError}}
-					<textarea class="form-input error-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
-					<p class="error-text">{{messageError}}</p>
-				{{else}}
-					<textarea class="form-input" name="message" rows="8" spellcheck="true" maxlength="500" placeholder="required"></textarea>
-				{{/if}}
-				<h3>Email</h3>
-				<input type="email" class="form-input" name="email" value="{{email}}" placeholder="optional"/>
-				<h3>Phone number</h3>
-				<input type="tel" class="form-input" name="phone-number" value="{{phoneNumber}}" placeholder="optional"></input>
-				<button type="submit" class="submit-btn btn">Send</button>
-			</form>
+		<section class="form-page">
+			<section class="form-container device-found-form">
+				<h1>You Found a Device!</h1>
+				<div class="device-found-instructions">
+					<p>Please provide some information to help return this device. Your information will be emailed to the device owner and won't be visible to anyone else.</p>
+				</div>
+				<form class="text-form " method="POST">
+					<h3>Message</h3>
+					{{#if messageError}}
+						<textarea class="form-input error-input" name="message" rows="8" spellcheck="true" maxlength="500"></textarea>
+						<p class="error-text">{{messageError}}</p>
+					{{else}}
+						<textarea class="form-input" name="message" rows="8" spellcheck="true" maxlength="500" placeholder="required"></textarea>
+					{{/if}}
+					<h3>Email</h3>
+					<input type="email" class="form-input" name="email" value="{{email}}" placeholder="optional"/>
+					<h3>Phone number</h3>
+					<input type="tel" class="form-input" name="phone-number" value="{{phoneNumber}}" placeholder="optional"></input>
+					<button type="submit" class="submit-btn btn">Send</button>
+				</form>
+			</section>
 		</section>
   </body>
 </html>

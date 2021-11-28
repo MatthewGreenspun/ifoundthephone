@@ -76,6 +76,18 @@
   background-color: white;
 }
 
+.device-found-form .text-form {
+  margin-top: 2rem !important;
+}
+
+.device-found-form .device-found-instructions {
+  padding: 0 2rem;
+  width: 100%;
+  margin: 0 4px;
+  font-size: 1rem;
+  text-align: center;
+}
+
 .text-form h3 {
   margin-left: 4px;
 }
@@ -142,6 +154,11 @@
   }
   .btn {
     font-size: 0.8rem;
+  }
+
+  .device-found-form .device-found-instructions {
+    font-size: 0.8rem;
+    text-align: left;
   }
 }
 
