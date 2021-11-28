@@ -22,6 +22,26 @@
             <td>{{userId}}</td>
           </tr>
         </table>
+        <br>
+        <h3>Your Devices</h3>
+        <br>
+        <div class="device-container">
+          <p>Default</p>
+          <p>{{userId}}</p>
+          <button class="btn hidden" type="submit">Create Device</button>
+        </div>
+        {{#each devices}}
+          <form action="/device/delete" method="get" class="device-container">
+            <input type="hidden" name="id" value={{this.[1]}} />
+            <p>{{this.[0]}}</p>
+            <p>{{this.[1]}}</p>
+            <button class="btn" type="submit">Delete</button>
+          </form>  
+        {{/each}}
+        <form method="GET" action="/device/create" class="add-device-form">
+        <input type="text" name="name" class="form-input" placeholder="Device Name" maxlength="45">
+        <button class="btn" type="submit">Create Device</button>
+        </form>
       </div>
     </section>
   </body>
