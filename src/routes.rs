@@ -175,18 +175,16 @@ pub async fn device_found(
     db_client: &State<DbClient>,
 ) -> Template {
     if email_info.message.len() > 0 {
-        let owner_email = match db::get_email(&db_client.client, &id).await {
-            Ok(email) => email,
-            Err(e) => {
-                eprintln!("failed to retrieve email. Error: {:?}", e);
-                String::new()
-            }
-        };
-        if owner_email.len() == 0 {
-            let context = json!({"deviceId": &id, "error": "failed to send email"});
-            return Template::render("device_found", &context);
-        }
-        email::email_device_owner(&owner_email, email_info.into_inner());
+        let (owner_email, owner_device) =
+            match db::get_email_and_device_name(&db_client.client, &id).await {
+                Ok(values) => values,
+                Err(e) => {
+                    eprintln!("failed to retrieve email. Error: {:?}", e);
+                    let context = json!({"deviceId": &id, "error": "failed to send email"});
+                    return Template::render("device_found", &context);
+                }
+            };
+        email::email_device_owner(&owner_email, &owner_device, email_info.into_inner());
         let context = json!({});
         return Template::render("index", &context);
     }
