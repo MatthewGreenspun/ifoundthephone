@@ -111,18 +111,23 @@ pub fn email_new_user(user_id: &str, user_email: &str) {
     }
 }
 
-pub fn email_device_owner(device_owner_email: &str, email_info: DeviceFoundRequest) {
+pub fn email_device_owner(
+    device_owner_email: &str,
+    device_name: &str,
+    email_info: DeviceFoundRequest,
+) {
     let ifoundthephone_email =
         std::env::var("EMAIL").expect("EMAIL environment variable not found");
     let ifoundthephone_password =
         std::env::var("EMAIL_PASSWORD").expect("EMAIL_PASSWORD environment variable not found");
     let creds = Credentials::new(ifoundthephone_email.clone(), ifoundthephone_password);
     let body = format!("<h1>Your Device Was Found!</h1>
-		<h2>Here is some information that was provided by the person who found your device which will hopefully help you retrieve it:</h2>
+		<h2>Your device <b>'{}'</b> was found. Here is some information that was provided by the person who found your device.</h2>
 		<h3>Finder Email: {}</h3>
 		<h3>Finder Phone Number: {}</h3>
 		<h3>Finder Message: </h3>
-		<p>{}</p>", 
+		<p>{}</p>",
+        device_name,
 		if email_info.email.len() > 0 {email_info.email} else {"<b>Not Provided</b>".to_string()},
 		if email_info.phone_number.len() > 0 {email_info.phone_number} else {"<b>Not Provided</b>".to_string()},
 		email_info.message)
