@@ -1,10 +1,21 @@
-.nav {
+.outer-nav {
   background-color: var(--bg-primary);
+}
+
+.nav {
+  margin: auto;
+  max-width: 1500px;
+  background-color: inherit;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
   color: var(--text-dark);
+}
+
+.nav > a {
+  color: var(--text-dark);
+  text-decoration: none;
 }
 
 .btn {

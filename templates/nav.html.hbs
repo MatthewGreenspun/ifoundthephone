@@ -1,22 +1,24 @@
-<section class="nav">
-  <h1>IFoundThePhone</h1>
-  <section class="btns">
-    {{#if isSignedIn}}
-      {{#if home}}
-        <button class="btn" onclick="window.location.href='{{profileUrl}}'">
-          Profile
+<div class="outer-nav">
+  <section class="nav">
+    <a href="/"><h1>IFoundThePhone</h1></a>
+    <section class="btns">
+      {{#if isSignedIn}}
+        {{#if home}}
+          <button class="btn" onclick="window.location.href='{{profileUrl}}'">
+            Profile
+          </button>
+        {{/if}}
+        <button class="btn" onclick="window.location.href='/logout'">
+          Logout
         </button>
+      {{else}}
+        <a class="btn" href="/signup">
+          Sign Up
+        </a>
+        <a class="btn" href="/login">
+          Login
+        </a>
       {{/if}}
-      <button class="btn" onclick="window.location.href='/logout'">
-        Logout
-      </button>
-    {{else}}
-      <a class="btn" href="/signup">
-        Sign Up
-      </a>
-      <a class="btn" href="/login">
-        Login
-      </a>
-    {{/if}}
+    </section>
   </section>
-</section>
+</div>
