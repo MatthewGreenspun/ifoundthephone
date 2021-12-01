@@ -40,6 +40,14 @@ pub async fn save_user(
             &[&user_id, email, hash_str, salt_str],
         )
         .await?;
+
+    client
+        .execute(
+            "INSERT INTO devices (device_id, user_id, device_name) VALUES ($1, $2, 'Default')",
+            &[user_id, user_id],
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -85,7 +93,7 @@ pub async fn delete_device(
 ) -> Result<(), Error> {
     client
         .execute(
-            "DELETE FROM devices WHERE device_id = $1 AND user_id = $2",
+            "DELETE FROM devices WHERE device_id = $1 AND user_id = $2 AND device_id != user_id",
             &[device_id, user_id],
         )
         .await?;
@@ -95,7 +103,7 @@ pub async fn delete_device(
 pub async fn get_devices(client: &Client, user_id: &String) -> Vec<(String, String)> {
     let rows = match client
         .query(
-            "SELECT device_id, device_name FROM devices WHERE user_id = $1",
+            "SELECT device_id, device_name FROM devices WHERE user_id = $1 AND device_id != user_id",
             &[user_id],
         )
         .await
@@ -125,6 +133,18 @@ pub async fn get_email(client: &Client, id: &String) -> Result<String, Error> {
     Ok(email.to_string())
 }
 
+pub async fn get_email_and_device_name(
+    client: &Client,
+    device_id: &String,
+) -> Result<(String, String), Error> {
+    let rows = client
+        .query("SELECT email, device_name FROM users JOIN devices ON devices.user_id = users.user_id AND device_id = $1", &[device_id])
+        .await?;
+    let email: &str = rows[0].get("email");
+    let device_name: &str = rows[0].get("device_name");
+    Ok((email.to_string(), device_name.to_string()))
+}
+
 /// returns the ID of a user given their email
 pub async fn get_id(client: &Client, email: &String) -> Result<String, Error> {
     let rows = client
@@ -136,7 +156,7 @@ pub async fn get_id(client: &Client, email: &String) -> Result<String, Error> {
 
 pub async fn id_exists(client: &Client, id: &String) -> bool {
     let rows = match client
-        .query("SELECT COUNT(*) FROM users WHERE user_id = $1", &[id])
+        .query("SELECT COUNT(*) FROM devices WHERE device_id = $1", &[id])
         .await
     {
         Ok(rows) => rows,
