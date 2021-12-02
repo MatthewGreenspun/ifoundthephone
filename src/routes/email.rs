@@ -22,7 +22,14 @@ fn get_text_width(font: &Font, text: &str, scale: Scale) -> u32 {
 }
 
 fn get_img_buf(id: &str) -> std::result::Result<Vec<u8>, ImageError> {
-    let code = QrCode::new(format!("http://localhost:8000/device/{}", id).as_bytes()).unwrap();
+    let site_url = match std::env::var("SITE_URL") {
+        Ok(url) => url,
+        Err(e) => {
+            eprintln!("Error retrieving environment variable SITE_URL: {}", e);
+            String::from("http://127.0.0.1:8000")
+        }
+    };
+    let code = QrCode::new(format!("{}/device/{}", site_url, id).as_bytes()).unwrap();
 
     let mut renderer = code.render::<Rgb<u8>>();
     renderer.max_dimensions(355, 355);
@@ -71,7 +78,7 @@ pub fn email_new_user(user_id: &str, user_email: &str) {
     let image_buf = match get_img_buf(user_id) {
         Ok(buf) => buf,
         Err(e) => {
-            eprintln!("error getting base64 image: {:?}", e);
+            eprintln!("error getting image: {:?}", e);
             Vec::new()
         }
     };
